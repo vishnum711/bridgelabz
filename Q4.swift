@@ -15,6 +15,7 @@ var n = 1
 while(i <= powernum!){
     n = n*2
     i=i+1
+    print(n)
 }
 if(n%4 == 0){
     print("the year is leap")
