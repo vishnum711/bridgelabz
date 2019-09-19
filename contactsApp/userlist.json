@@ -1,0 +1,20 @@
+{
+	"title": "userlist",
+	"persons":[
+     {
+     "name": "vishnu",
+     "age": 22,
+     "address": "mumbai"
+     },
+     {
+     "name": "sudipta",
+     "age": 23,
+     "address": "kolkata"
+     },
+    {
+     "name": "ravindra",
+     "age": 24,
+     "address": "jaipur"
+     }
+	]
+}
