@@ -9,13 +9,17 @@
 import UIKit
 import CoreData
 
-class SecondViewController: UIViewController,UICollectionViewDataSource, UICollectionViewDelegate {
+class SecondViewController: UIViewController,UICollectionViewDataSource, UICollectionViewDelegate,UICollectionViewDelegateFlowLayout{
  
+ 
+    fileprivate var longPressGesture: UILongPressGestureRecognizer!
    
     @IBOutlet weak var myNoteCollectionView: UICollectionView!
     
     var noteList:[noteFormat] = []
-    
+    var noteList2:[noteFormat] = []
+    var loadIndex:[Int] = []
+    var condition = 0
     @IBOutlet weak var ubeView: UIView!
     @IBOutlet weak var trail: NSLayoutConstraint!
     @IBOutlet weak var LogoutButton: UIButton!
@@ -39,16 +43,28 @@ class SecondViewController: UIViewController,UICollectionViewDataSource, UIColle
     //------------------------------------
     override func viewDidLoad() {
         super.viewDidLoad()
+
         layoutDesign()
         noteList = collectionArray()
-        print(noteList.count)
-        print(noteList[0].title)
+        var ordrArry = retrieveOrderNotes()
+        if ordrArry?.count != 0 {
+        print("retrieved after load = \(ordrArry)")
+        noteList2 = Array(repeating: noteFormat(title: "", noteDescription: "", noteIndex: 0), count: noteList.count)
+        for i in 0 ..< noteList.count{
+            noteList2[i] = noteList[ordrArry![i]]
+        }
+        }else{
+            noteList2 = noteList
+        }
         // Do any additional setup after loading the view.
         welcomeLabel.text = "welcome \(getname)"
         lead.constant = -414
         trail.constant = -414
         ubeView.layer.cornerRadius = 8
-
+        
+        //move cells-----
+        longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(self.handleLongGesture(gesture:)))
+        myNoteCollectionView.addGestureRecognizer(longPressGesture)
     }
     
     func collectionArray()->[noteFormat]{
@@ -61,8 +77,9 @@ class SecondViewController: UIViewController,UICollectionViewDataSource, UIColle
         
         do{
             let result = try context.fetch(request)
-            for data in result as! [NSManagedObject]{
-            var noteData = noteFormat(title: data.value(forKey: "title") as! String, noteDescription: data.value(forKey: "noteDescription") as! String)
+            for i in 0 ..< result.count{
+                let data: NSManagedObject = result[i] as! NSManagedObject
+                let noteData = noteFormat(title: data.value(forKey: "title") as! String, noteDescription: data.value(forKey: "noteDescription") as! String, noteIndex: i)
             //print(data.value(forKey: "title") as! String)
            tempArray.append(noteData)
             }
@@ -72,20 +89,19 @@ class SecondViewController: UIViewController,UICollectionViewDataSource, UIColle
         return tempArray
     }
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        print("hey vishnu///")
         return noteList.count
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        
-        var item = noteList[indexPath.item]
-        print(item.title)
-        var cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! noteCollectionViewCell
+
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! noteCollectionViewCell
+
+        let item = noteList2[indexPath.item]
+        cell.title.text = item.title
+        cell.noteDscrptn.text = item.noteDescription
         cell.layer.borderWidth = 2
         cell.layer.cornerRadius = 5
         cell.layer.borderColor = UIColor.lightGray.cgColor
-        cell.title.text = item.title
-        cell.noteDscrptn.text = item.noteDescription
         return cell
     }
     
@@ -137,5 +153,37 @@ class SecondViewController: UIViewController,UICollectionViewDataSource, UIColle
         // Pass the selected object to the new view controller.
     }
     */
+    func collectionView(_ collectionView: UICollectionView, moveItemAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        let temp = noteList2.remove(at: sourceIndexPath.item)
+        noteList2.insert(temp,at: destinationIndexPath.item)
+        
+    loadIndex = Array(repeating: 0, count: noteList2.count)
+        print(loadIndex)
+        for i in 0 ..< noteList.count{
+            loadIndex[i] = noteList2[i].noteIndex
+        }
+     UserDefaults.standard.removeObject(forKey: "Index")
+        let defaults = UserDefaults.standard
+        defaults.set(loadIndex, forKey: "Index")
+   
+    
+    }
+   
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        var main  = UIStoryboard(name: "Main", bundle: nil)
+        let third = main.instantiateViewController(withIdentifier: "editVC") as! editDelete
+        third.noteTitle = noteList2[indexPath.item].title
+        third.noteDescription = noteList2[indexPath.item].noteDescription
+        third.noteIndex = noteList2[indexPath.item].noteIndex
+        self.present(third,animated: true,completion: nil)
+    }
+    
+    func retrieveOrderNotes()->[Int]?{
+        //UserDefaults.standard.removeObject(forKey: "Index")
+        let defaults = UserDefaults.standard
+        let array = defaults.array(forKey: "Index") as? [Int] ?? [Int]()
+        return array
+    }
+    
 
 }
